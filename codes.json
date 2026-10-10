@@ -1,0 +1,17 @@
+{
+  "unused_codes": [
+    "AURA-8392",
+    "AURA-1049",
+    "AURA-5521",
+    "AURA-9923",
+    "AURA-7714",
+    "AURA-3382",
+    "AURA-6619",
+    "AURA-4401",
+    "AURA-2295",
+    "AURA-9182"
+  ],
+  "used_by": {
+    "5683811825": "OWNER"
+  }
+}
