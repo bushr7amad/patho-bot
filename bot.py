@@ -1,7 +1,8 @@
 import os
 import json
-import threading
+import asyncio
 from flask import Flask
+from threading import Thread
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
@@ -27,8 +28,8 @@ def save_data(filename, data):
     try:
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"Error saving {filename}: {e}")
+    except Exception:
+        pass
 
 def get_questions():
     return load_data("questions.json", [])
@@ -42,7 +43,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     codes_data = get_codes_data()
 
-    # فحص إذا كان الطالب مسجلاً مسبقاً أو هو المدير
     if user_id in codes_data.get("used_by", {}) or int(user_id) == ADMIN_ID:
         keyboard = [
             [InlineKeyboardButton("بدء بنك أسئلة الهضمية 🔬", callback_data="start_quiz")]
@@ -50,14 +50,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
             f"أهلاً بك يا دكتور {user_name} في بوت التشريح المرضي الخاص (AURA) ✨\n\n"
-            "اشتراكك مفعّل ونظامي. اضغط أدناه للبدء:",
+            "اشتراكك مفعّل. اضغط أدناه للبدء:",
             reply_markup=reply_markup
         )
     else:
         await update.message.reply_text(
             f"مرحباً بك دكتور {user_name} 🩺\n\n"
-            "🔒 هذا البوت مخصص للمشتركين فقط وكل كود مخصص لطالب واحد.\n"
-            "يرجى إرسال كود التفعيل الخاص بك هنا كرسالة لتفعيل حسابك:"
+            "🔒 هذا البوت مخصص للمشتركين فقط.\n"
+            "يرجى إرسال كود التفعيل الخاص بك هنا لتفعيل حسابك:"
         )
 
 async def check_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -66,7 +66,6 @@ async def check_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     codes_data = get_codes_data()
 
-    # إذا كان مفعلاً مسبقاً
     if user_id in codes_data.get("used_by", {}) or int(user_id) == ADMIN_ID:
         await update.message.reply_text("حسابك مفعّل بالفعل! أرسل /start لبدء الاختبار.")
         return
@@ -74,7 +73,6 @@ async def check_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     unused = codes_data.get("unused_codes", [])
 
     if text in unused:
-        # حرق الكود وربطه بالمستخدم فوراً لمنع استخدامه من شخص آخر
         unused.remove(text)
         codes_data["used_by"][user_id] = text
         save_data("codes.json", codes_data)
@@ -84,15 +82,11 @@ async def check_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text(
-            "✅ تم التحقق من الكود وتفعيل اشتراكك بنجاح على هذا الحساب!\n"
-            "اضغط أدناه لبدء حل الأسئلة:",
+            "✅ تم التحقق من الكود وتفعيل اشتراكك بنجاح!\nاضغط أدناه للبدء:",
             reply_markup=reply_markup
         )
     else:
-        await update.message.reply_text(
-            "❌ هذا الكود غير صالح أو تم استخدامه مسبقاً من قبل حساب آخر.\n"
-            "يرجى مراجعة إدارة AURA."
-        )
+        await update.message.reply_text("❌ هذا الكود غير صالح أو تم استخدامه مسبقاً.")
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -102,7 +96,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     codes_data = get_codes_data()
 
     if user_id not in codes_data.get("used_by", {}) and int(user_id) != ADMIN_ID:
-        await query.message.reply_text("⚠️ اشتراكك غير مفعّل. أرسل كود التفعيل أولاً.")
+        await query.message.reply_text("⚠️ اشتراكك غير مفعّل.")
         return
 
     if query.data == "start_quiz":
@@ -130,7 +124,7 @@ async def send_next_question(chat_id, context: ContextTypes.DEFAULT_TYPE):
     else:
         await context.bot.send_message(
             chat_id=chat_id,
-            text="🎉 مبروك! أنهيت بنك أسئلة الهضمية كاملاً بنجاح.\nأرسل /start للمراجعة في أي وقت."
+            text="🎉 مبروك! أنهيت الأسئلة بنجاح. أرسل /start للمراجعة مجدداً."
         )
 
 async def handle_poll_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -139,22 +133,25 @@ async def handle_poll_answer(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if chat_id:
         await send_next_question(chat_id, context)
 
-# سيرفر إبقاء الخدمة تعمل على Render
-server = Flask("")
+# --- تشغيل Flask بسلاسة دون حجب البوت ---
+web_app = Flask(__name__)
 
-@server.route("/")
-def home():
+@web_app.route("/")
+def index():
     return "Bot is alive!"
 
-def run_web():
+def start_flask():
     port = int(os.environ.get("PORT", 8080))
-    server.run(host="0.0.0.0", port=port)
+    web_app.run(host="0.0.0.0", port=port, use_reloader=False)
 
-threading.Thread(target=run_web).start()
+if __name__ == "__main__":
+    flask_thread = Thread(target=start_flask, daemon=True)
+    flask_thread.start()
 
-app = ApplicationBuilder().token(BOT_TOKEN).build()
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CallbackQueryHandler(button_handler))
-app.add_handler(PollAnswerHandler(handle_poll_answer))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_code))
-app.run_polling()
+    bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
+    bot_app.add_handler(CommandHandler("start", start))
+    bot_app.add_handler(CallbackQueryHandler(button_handler))
+    bot_app.add_handler(PollAnswerHandler(handle_poll_answer))
+    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_code))
+
+    bot_app.run_polling(drop_pending_updates=True)
