@@ -209,31 +209,29 @@ async def create_code_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"تم توليد كود اشتراك جديد:\n`{code}`", parse_mode="Markdown"
     )
-
-
-if __name__ == "__main__":
+    if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("new_code", create_code_cmd))
     app.add_handler(CallbackQueryHandler(button_handler))
-    app.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler)
-    )
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
 
-     ```python
-   import os
-   import threading
-   from flask import Flask
+    import os
+    import threading
+    from flask import Flask
 
-   server = Flask('')
+    server = Flask("")
 
-   @server.route('/')
-   def home():
-       return 'Bot is alive!'
+    @server.route("/")
+    def home():
+        return "Bot is alive!"
 
-   def run_web():
-       port = int(os.environ.get('PORT', 8080))
-       server.run(host='0.0.0.0', port=port)
+    def run_web():
+        port = int(os.environ.get("PORT", 8080))
+        server.run(host="0.0.0.0", port=port)
 
-   threading.Thread(target=run_web).start()
-   app.run_polling()
+    threading.Thread(target=run_web).start()
+    app.run_polling()
+
+
+
