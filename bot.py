@@ -209,7 +209,7 @@ async def create_code_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"تم توليد كود اشتراك جديد:\n`{code}`", parse_mode="Markdown"
     )
-    if __name__ == "__main__":
+if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("new_code", create_code_cmd))
