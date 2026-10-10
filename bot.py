@@ -220,4 +220,20 @@ if __name__ == "__main__":
         MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler)
     )
 
-    app.run_polling()
+     ```python
+   import os
+   import threading
+   from flask import Flask
+
+   server = Flask('')
+
+   @server.route('/')
+   def home():
+       return 'Bot is alive!'
+
+   def run_web():
+       port = int(os.environ.get('PORT', 8080))
+       server.run(host='0.0.0.0', port=port)
+
+   threading.Thread(target=run_web).start()
+   app.run_polling()
