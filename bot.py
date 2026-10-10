@@ -135,4 +135,21 @@ async def handle_poll_answer(update: Update, context: ContextTypes.DEFAULT_TYPE)
 web_app = Flask(__name__)
 
 @web_app.route("/")
-def index
+def index():
+    return "Bot is alive!"
+
+def start_flask():
+    port = int(os.environ.get("PORT", 8080))
+    web_app.run(host="0.0.0.0", port=port, use_reloader=False)
+
+if __name__ == "__main__":
+    flask_thread = Thread(target=start_flask, daemon=True)
+    flask_thread.start()
+
+    bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
+    bot_app.add_handler(CommandHandler("start", start))
+    bot_app.add_handler(CallbackQueryHandler(button_handler))
+    bot_app.add_handler(PollAnswerHandler(handle_poll_answer))
+    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_code))
+
+    bot_app.run_polling(drop_pending_updates=True)
