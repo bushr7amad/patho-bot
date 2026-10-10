@@ -1,6 +1,5 @@
-import os
+hereimport os
 import json
-import asyncio
 from flask import Flask
 from threading import Thread
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -14,7 +13,7 @@ from telegram.ext import (
     filters
 )
 
-BOT_TOKEN = "8945939835:AAF2KhhwVNwmWtCQQriaF1j8kfdqkxGj"
+BOT_TOKEN = "8945939835:AAF2KhhwVNWmWtCQQriaF1j8kfdqkXgja60"
 ADMIN_ID = 5683811825
 
 def load_data(filename, default):
@@ -133,25 +132,7 @@ async def handle_poll_answer(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if chat_id:
         await send_next_question(chat_id, context)
 
-# --- تشغيل Flask بسلاسة دون حجب البوت ---
 web_app = Flask(__name__)
 
 @web_app.route("/")
-def index():
-    return "Bot is alive!"
-
-def start_flask():
-    port = int(os.environ.get("PORT", 8080))
-    web_app.run(host="0.0.0.0", port=port, use_reloader=False)
-
-if __name__ == "__main__":
-    flask_thread = Thread(target=start_flask, daemon=True)
-    flask_thread.start()
-
-    bot_app = ApplicationBuilder().token(BOT_TOKEN).build()
-    bot_app.add_handler(CommandHandler("start", start))
-    bot_app.add_handler(CallbackQueryHandler(button_handler))
-    bot_app.add_handler(PollAnswerHandler(handle_poll_answer))
-    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_code))
-
-    bot_app.run_polling(drop_pending_updates=True)
+def index
