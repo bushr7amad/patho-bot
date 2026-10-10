@@ -232,6 +232,3 @@ async def create_code_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     threading.Thread(target=run_web).start()
     app.run_polling()
-
-
-
